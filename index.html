@@ -1,0 +1,369 @@
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<link rel="stylesheet" type="text/css" href="main.css">
+		<link rel="stylesheet" type="text/css" href="dc.css">
+		<link rel="stylesheet" type="text/css" href="loading.css">
+
+		<script type="text/javascript" src="d3.min.js"></script>
+		<script type="text/javascript" src="crossfilter.js"></script>
+		<script type="text/javascript" src="dc.js"></script>
+		<script type="text/javascript" src="jquery-latest.js"></script>
+		<script type="text/javascript" src="hammer.js"></script>
+	</head>
+
+
+	<body>
+
+
+	<div class="ct-container">
+		<header class="ct-header">
+			<span class="title title-app float-left">Webapp Pro </span>
+			<div class="title title-app float-right title-light user-header"> @hamroune </div>
+			<span class="title title-app float-right title-light"> My projects </span>
+			<span class="title title-app float-right title-light"> Settings </span>			 
+		</header>		
+	</div>
+
+
+		
+	<div id="demo" class="float-left">
+		<nav>
+			<ul>
+				<li>
+					<a href="#">
+						<span>Home</span>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<span>About</span>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<span>Portfolio</span>
+					</a>
+				</li>
+				<li>
+					<a href="#">
+						<span>Contact</span>
+					</a>
+				</li>
+				
+			</ul>
+		</nav>
+	</div>
+
+				<ul class="bokeh">
+					<li></li>
+					<li></li>
+					<li></li>
+					<li></li>
+				</ul>
+
+	<div class="dash float-left" id="yearly-bubble-chart" style="display:none;" class="dc-chart">
+				
+	</div>
+	<div id="day-of-week-chart" class="dc-chart">
+		<span style="float:left">By days of weeks</span>
+	</div>
+	<div id="quarter-chart" class="dc-chart">
+		<span style="float:left">By Quarters</span>
+	</div>
+	<div id="monthly-move-chart" style="margin-left:260px;" class="dc-chart">
+		<span style="float:left">Monthly move chart</span>
+	</div>
+
+
+
+	<script type="text/javascript">
+	var width = $('#yearly-bubble-chart').width();
+	var height = $('#yearly-bubble-chart').height();
+
+var yearlyBubbleChart = dc.bubbleChart("#yearly-bubble-chart");
+var dayOfWeekChart = dc.rowChart("#day-of-week-chart");
+var quarterChart = dc.pieChart("#quarter-chart");
+var moveChart = dc.lineChart("#monthly-move-chart");
+
+// set dc.js version in title
+d3.selectAll("#version").text(dc.version);
+
+// load data from a csv file
+d3.csv("ndx.csv", function (data) {
+            // since its a csv file we need to format the data a bit
+            var dateFormat = d3.time.format("%m/%d/%Y");
+            var numberFormat = d3.format(".2f");
+
+            data.forEach(function (e) {
+                e.dd = dateFormat.parse(e.date);
+                e.month = d3.time.month(e.dd); // pre-calculate month for better performance
+            });
+
+            // feed it through crossfilter
+            var ndx = crossfilter(data);
+            var all = ndx.groupAll();
+
+            var yearlyDimension = ndx.dimension(function (d) {
+                return d3.time.year(d.dd);
+            });
+            var yearlyPerformanceGroup = yearlyDimension.group().reduce(
+                    //add
+                    function (p, v) {
+                        ++p.count;
+                        p.absGain += +v.close - +v.open;
+                        p.fluctuation += Math.abs(+v.close - +v.open);
+                        p.sumIndex += (+v.open + +v.close) / 2;
+                        p.avgIndex = p.sumIndex / p.count;
+                        p.percentageGain = (p.absGain / p.avgIndex) * 100;
+                        p.fluctuationPercentage = (p.fluctuation / p.avgIndex) * 100;
+                        return p;
+                    },
+                    //remove
+                    function (p, v) {
+                        --p.count;
+                        p.absGain -= +v.close - +v.open;
+                        p.fluctuation -= Math.abs(+v.close - +v.open);
+                        p.sumIndex -= (+v.open + +v.close) / 2;
+                        p.avgIndex = p.sumIndex / p.count;
+                        p.percentageGain = (p.absGain / p.avgIndex) * 100;
+                        p.fluctuationPercentage = (p.fluctuation / p.avgIndex) * 100;
+                        return p;
+                    },
+                    //init
+                    function () {
+                        return {count: 0, absGain: 0, fluctuation: 0, fluctuationPercentage: 0, sumIndex: 0, avgIndex: 0, percentageGain: 0};
+                    }
+            );
+
+            var dateDimension = ndx.dimension(function (d) {
+                return d.dd;
+            });
+
+            // monthly index avg fluctuation in percentage
+            var moveMonths = ndx.dimension(function (d) {
+                return d.month;
+            });
+            var monthlyMoveGroup = moveMonths.group().reduceSum(function (d) {
+                return Math.abs(+d.close - +d.open);
+            });
+            var volumeByMonthGroup = moveMonths.group().reduceSum(function (d) {
+                return d.volume / 500000;
+            });
+            var indexAvgByMonthGroup = moveMonths.group().reduce(
+                    function (p, v) {
+                        ++p.days;
+                        p.total += (+v.open + +v.close) / 2;
+                        p.avg = Math.round(p.total / p.days);
+                        return p;
+                    },
+                    function (p, v) {
+                        --p.days;
+                        p.total -= (+v.open + +v.close) / 2;
+                        p.avg = p.days == 0 ? 0 : Math.round(p.total / p.days);
+                        return p;
+                    },
+                    function () {
+                        return {days: 0, total: 0, avg: 0};
+                    }
+            );
+
+            var gainOrLoss = ndx.dimension(function (d) {
+                return +d.open > +d.close ? "Loss" : "Gain";
+            });
+            var gainOrLossGroup = gainOrLoss.group();
+
+            var fluctuation = ndx.dimension(function (d) {
+                return Math.round((d.close - d.open) / d.open * 100);
+            });
+            var fluctuationGroup = fluctuation.group();
+
+            var quarter = ndx.dimension(function (d) {
+                var month = d.dd.getMonth();
+                if (month <= 3)
+                    return "Q1";
+                else if (month > 3 && month <= 5)
+                    return "Q2";
+                else if (month > 5 && month <= 7)
+                    return "Q3";
+                else
+                    return "Q4";
+            });
+            var quarterGroup = quarter.group().reduceSum(function (d) {
+                return d.volume;
+            });
+
+            var dayOfWeek = ndx.dimension(function (d) {
+                var day = d.dd.getDay();
+                switch (day) {
+                    case 0:
+                        return "0.Sun";
+                    case 1:
+                        return "1.Mon";
+                    case 2:
+                        return "2.Tue";
+                    case 3:
+                        return "3.Wed";
+                    case 4:
+                        return "4.Thu";
+                    case 5:
+                        return "5.Fri";
+                    case 6:
+                        return "6.Sat";
+                }
+            });
+            var dayOfWeekGroup = dayOfWeek.group();
+
+            yearlyBubbleChart.width(width)
+                    .height(height)
+                    .margins({top: 10, right: 50, bottom: 30, left: 40})
+                    .dimension(yearlyDimension)
+                    .group(yearlyPerformanceGroup)
+                    .transitionDuration(1500)
+                    .colors(['#8965AD', '#DF6164', '#62A9DD', '#72C380', '#DCA761'])
+                    .colorDomain([-12000, 12000])
+                    .colorAccessor(function (d) {
+                        return d.value.absGain;
+                    })
+                    .keyAccessor(function (p) {
+                        return p.value.absGain;
+                    })
+                    .valueAccessor(function (p) {
+                        return p.value.percentageGain;
+                    })
+                    .radiusValueAccessor(function (p) {
+                        return p.value.fluctuationPercentage;
+                    })
+                    .maxBubbleRelativeSize(0.3)
+                    .x(d3.scale.linear().domain([-2500, 2500]))
+                    .y(d3.scale.linear().domain([-100, 100]))
+                    .r(d3.scale.linear().domain([0, 4000]))
+                    .elasticY(true)
+                    .yAxisPadding(100)
+                    .elasticX(true)
+                    .xAxisPadding(500)
+                    .renderHorizontalGridLines(true)
+                    .renderVerticalGridLines(true)
+                    .renderLabel(true)
+                    .renderTitle(true)
+                    .label(function (p) {
+                        return p.key.getFullYear();
+                    })
+                    .title(function (p) {
+                        return p.key.getFullYear()
+                                + "\n"
+                                + "Index Gain: " + numberFormat(p.value.absGain) + "\n"
+                                + "Index Gain in Percentage: " + numberFormat(p.value.percentageGain) + "%\n"
+                                + "Fluctuation / Index Ratio: " + numberFormat(p.value.fluctuationPercentage) + "%";
+                    })
+                    .yAxis().tickFormat(function (v) {
+                        return v + "%";
+                    });
+
+            dayOfWeekChart.width(180)
+                .height(180)
+                .margins({top: 20, left: 10, right: 10, bottom: 20})
+                .group(dayOfWeekGroup)
+                .dimension(dayOfWeek)
+                .colors(['#8965AD', '#DF6164', '#62A9DD', '#72C380', '#DCA761'])
+                .label(function (d){
+                    return d.key.split(".")[1];
+                })
+                .title(function(d){return d.value;})
+                .elasticX(true)
+                .xAxis().ticks(4);
+
+            quarterChart.width(180)
+                    .height(180)
+                    .radius(80)
+                    .innerRadius(30)                    
+                    .dimension(quarter)
+                    .group(quarterGroup)
+                    .colors(['#8965AD', '#DF6164', '#62A9DD', '#72C380', '#DCA761']);
+            
+    moveChart
+            .width(width) // (optional) define chart width, :default = 200
+		    .height(200) // (optional) define chart height, :default = 200
+		    .transitionDuration(500) // (optional) define chart transition duration, :default = 500
+		    // (optional) define margins
+		    .dimension(moveMonths) // set dimension
+		    .group(monthlyMoveGroup) // set group
+		    // (optional) whether chart should rescale y axis to fit data, :default = false
+		    .elasticY(true)
+		    // (optional) when elasticY is on whether padding should be applied to y axis domain, :default=0
+		    .yAxisPadding(100)
+		    // (optional) whether chart should rescale x axis to fit data, :default = false
+		    .elasticX(true)
+		    // (optional) when elasticX is on whether padding should be applied to x axis domain, :default=0
+		    .xAxisPadding(500)
+		    // define x scale
+		    .x(d3.time.scale().domain([new Date(1985, 0, 1), new Date(2012, 11, 31)]))
+		    // (optional) set filter brush rounding
+		    .round(d3.time.month.round)
+		    // define x axis units
+		    .xUnits(d3.time.months)
+		    // (optional) render horizontal grid lines, :default=false
+		    .renderHorizontalGridLines(true)
+		    // (optional) render vertical grid lines, :default=false
+		    .renderVerticalGridLines(true)
+		    // (optional) render as area chart, :default = false
+		    .renderArea(false)
+		    // (optional) add stacked group and custom value retriever
+		    .stack(monthlyMoveGroup, function(d){return d.value;})
+		    // (optional) you can add multiple stacked group with or without custom value retriever
+		    // if no custom retriever provided base chart's value retriever will be used
+		    .stack(monthlyMoveGroup)
+		    // (optional) whether this chart should generate user interactive brush to allow range
+		    // selection, :default=true.
+		    .brushOn(true)
+		    // (optional) whether dot and title should be generated on the line using
+		    // the given function, :default=no
+		    .title(function(d) { return "Value: " + d.value; })
+		    // (optional) whether chart should render titles, :default = false
+		    .renderTitle(true)
+		    // (optional) radius used to generate title dot, :default = 5
+		    .dotRadius(10)
+
+		    //.colors(['#8965AD', '#DF6164', '#62A9DD', '#72C380', '#DCA761'])
+
+		    ;
+
+            setTimeout(function(){
+            	$('#yearly-bubble-chart').show();
+            	$('.bokeh').hide();
+            	dc.renderAll();
+            	
+            	//MULTI TOUCH ?
+            	$("svg")
+            .hammer({ drag_max_touches:0})
+            .on("touch drag", function(ev) {
+				
+                var touches = ev.gesture.touches;
+                
+                console.log('EVENT', touches);
+
+                ev.gesture.preventDefault();
+
+                for(var t=0,len=touches.length; t<len; t++) {
+                    var target = $(touches[t].target);
+                    target.css({
+                        zIndex: 1337,
+                        left: touches[t].pageX-50,
+                        top: touches[t].pageY-50
+                    });
+                }
+            });
+            	
+            }, 2000);
+        }
+);
+	</script>
+
+
+
+	</body>
+
+
+</html>

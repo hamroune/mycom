@@ -1,0 +1,203 @@
+<html>
+<head>
+	<meta name=”viewport” content=”width=device-width, initial-scale=1, maximum-scale=1″>
+	<style>
+	aside, article, section, header, footer, nav {
+		display: block;
+	}
+	aside, article, section, header, footer, nav, html, body, p, h1, h2, h3, div {
+		margin: 0;
+		padding: 0;
+	}
+	
+	/*BACKGROUND THEME*/
+	html {
+		background: #EDEDED;
+	}
+	body {
+		margin: 0 auto;
+		background: #fff;
+		font: 90%/1.6 georgia,serif;
+	}
+	
+	/*content styling*/
+	header {
+		background: #373737;
+		padding: 50px 25px 10px 0;
+		color: #fff;
+		margin-bottom: 2em;
+	}
+	h1 {
+		text-align: right;
+		font-size: 3em;
+		font-weight: normal;
+		font-variant: small-caps;
+		letter-spacing: .1em;
+	}
+	p {
+		margin-bottom: 1em;
+	}
+	article {
+		text-align: justify;
+	}
+	article h2 {
+		font-size: 2em;
+		font-weight: normal;
+		margin-bottom: .2em;
+	}
+	article p {
+		font-size: 1.2em;
+		margin-bottom: 1em;
+	}
+	aside {
+		font: .9em sans-serif;
+	}
+	aside h2 {
+		font-size: 1.2em;
+		margin-bottom: 1em;
+	}
+	footer {
+		background: #373737;
+		font: 1.2em sans-serif;
+		text-transform: uppercase;
+		letter-spacing: .2em;
+		text-align: center;
+		color: #fff;
+	}
+
+/*layout styles*/
+	@media all and (min-width: 780px) {
+	/*layout*/
+	body {
+		width: 85%;
+		max-width: 1280px;
+		min-width: 960px;
+	}
+	article {
+		float: left;
+		width: 64%;
+		padding-left: 2.5%;
+	}
+	aside {
+		float: right;
+		width: 26%;
+		padding: 0 2.5%;
+		border-left: 1px solid #aaa;
+	}
+	section {
+		-webkit-column-count: 1;
+		-moz-column-count: 1;
+		column-count: 1;
+		-webkit-column-gap: 1em;
+		-moz-column-gap: 1em;
+		column-gap: 1em;
+		padding-bottom: 1em;
+		margin-bottom: 1em;
+		border-bottom: 1px solid black;
+	}
+	section:last-of-type {
+		border-bottom: none;
+	}
+	footer {
+		clear: both;
+		padding: 25px 0 15px;
+	}
+	}
+	
+	/*TABLET*/
+	@media all and (min-width: 481px) and (max-width: 780px) {
+	/*layout*/
+	body {
+		width: 90%;
+		max-width: 780px;
+		min-width: 485px;
+		font-size: 80%;
+	}
+	article {
+		float: left;
+		width: 56%;
+		padding-left: 2.5%;
+	}
+	aside {
+		float: right;
+		width: 34%;
+		padding: 0 2.5%;
+		border-left: 1px solid #aaa;
+	}
+	footer {
+		clear: both;
+		padding: 25px 0 15px;
+	}
+
+	/*content styles*/
+	h1 {
+		font-size: 2.4em;
+	}
+	footer {
+		font-size: 1em;
+	}
+	}
+	
+	/*SMART PHONE*/
+	@media all and (max-width: 480px) {
+	/*layout*/
+	body {
+		width: 90%;
+		max-width: 480px;
+	}
+	article {
+		padding: 0 5%;
+	}
+	footer {
+		padding: 25px 0 15px;
+	}
+	/*content styles*/
+	header {
+		padding: 25px 15px 5px 0;
+		font-size: 1.3m;
+	}
+	h1 {
+		text-align: right;
+		font-size: 2em;
+	}
+	article {
+		text-align: left;
+		margin-bottom: 1em;
+	}
+	aside {
+		border-top: 1px solid black;
+		padding: 1em 5% 0;
+		line-height: 2;
+	}
+	footer {
+		font-size: .7em;
+	}
+}
+
+</style>
+<title> Demo about Responsive Webdesign </title>
+</head>
+<body>
+<header>
+	<span class="title title-app float-left">Webapp Pro </span>
+			<div class="title title-app float-right title-light user-header"> @hamroune </div>
+			<span class="title title-app float-right title-light"> My projects </span>
+			<span class="title title-app float-right title-light"> Settings </span>		
+<h1>responsive Web Design tutorial</h1>
+</header>
+<article id="one">
+<h2>Responsive Web Design</h2>
+<section class="one">
+<p>Some Demo Content here...</p>
+</section>
+</article>
+<aside>
+<h2>sidebar</h2>
+<p>Some Demo Content here...</p>
+<p>Some Demo Content here...</P>
+</aside>
+<footer>
+<p>Copy Right information</p>
+</footer>
+</body>
+</html>
